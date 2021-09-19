@@ -147,3 +147,93 @@ int minSubArrayLen(int target, vector<int>& nums) {
 输出: 2
 解释: 此题 [1,1] 与 [1,1] 为两种不同的情况
 ```
+
+##### 经典前缀和
+
+其实就是这个前n项和S<sub>n</sub>=S<sub>n-1</sub>+a<sub>n</sub>跟
+
+$$
+\sum_{idx=m+1}^{n} a[idx] = S_n-S_m
+$$
+
+的数列公式。。
+
+举个例子（假设下标从1开始，默认a<sub>0</sub>==S<sub>0</sub>==0）
+
+```
+1 2 1 2 1
+```
+
+前n项和S<sub>n</sub>为
+
+```
+1 3 4 6 7
+```
+
+如果k=3
+
+这里S<sub>2</sub>-S<sub>0</sub>==k, 意味着a1+a2==k， 同理S<sub>5</sub>-S<sub>3</sub>==k => a4+a5==k
+
+即 S<sub>n</sub>-S<sub>m</sub> = a<sub>m+1</sub>+a<sub>m+2</sub>+...a<sub>n</sub>
+
+因为是要求连续数组，所以假设遍历到n，就是从n往左找到一个连续的sub array，其和为k
+
+所以每次遍历到一个前n项和S<sub>n</sub>，只要看看有没有S<sub>m</sub>满足S<sub>n</sub>-k==S<sub>m</sub>即可
+
+可以先把前n项和求出来，放到一个`vector<int> s;`里面，然后遍历s即可
+
+但是比较tricky的一点就是这里有负数，所以当遍历到S<sub>n</sub>的时候，不只有一个S<sub>m</sub>满足S<sub>n</sub>-k==S<sub>m</sub>（否则找到S<sub>m</sub>之后res++就vans了）
+
+比如说a<sub>n</sub>：
+
+```
+2 1 -1 2 1
+```
+
+S<sub>n</sub>：
+
+```
+2 1  2 4 5
+```
+
+这样的话，当S<sub>n</sub>==4的时候，k=2的话，前面就有两个S<sub>m</sub>满足S<sub>n</sub>-k==S<sub>m</sub>
+
+```
+[2, 1, -1], [2]
+```
+
+即现在解决：**满足S<sub>n</sub>-k==S<sub>m</sub>的S<sub>m</sub>有几个？**
+
+就弄个`unordered_map<int, int> map;`, k-v为{某一个前n项和S<sub>n</sub>, 其个数}，每次遍历的时候更新一下map即可
+
+其实真正只关心遍历到**某一个时刻的S<sub>n</sub>**，也不会关心**之前某一个满足S<sub>n</sub>-k==S<sub>m</sub>的S<sub>m</sub>的magnitude**，要的只是**S<sub>m</sub>到底有多少个**（放到map里面了）
+
+所以可以只用一个for，先根据S<sub>n</sub> = a<sub>n</sub> + S<sub>n-1 </sub> 把S<sub>n</sub>求出来，其余的不变。。
+
+```c++
+class Solution {
+public:
+    int subarraySum(vector<int>& nums, int k) {
+        
+        // sn = sn-1 + an (sn = an = 0)
+        // vector<int> s;
+        // s.push_back(0);
+        // for(auto &an : nums)
+        //     s.push_back(s.back() + an);
+        
+        // num of Sn
+        unordered_map<int, int> map;
+         
+        int res = 0, sn = 0;
+        map[0] = 1;
+        for(int i = 0; i<nums.size(); i++){
+            sn += nums[i];
+
+            if(map.count(sn-k))
+                res += map[sn-k];
+            map[sn]++;
+        }
+        return res;
+    }
+};
+```
