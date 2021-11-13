@@ -34,5 +34,25 @@ public:
             }
         }
         return dp[len1][len2];
+        // dfs(a, b, a.size(), b.size());
+    }
+    // 遍历到a[i]与b[j]，看怎么删 能让a b一样，并且删得次数最小
+    int dfs(string a, string b, int i, int j)
+    {
+        // base case, 走到底了
+        if (i == -1 && j == -1)
+            return 0;
+        if (i == -1)
+            // a到底了 只能删b[j]
+            return dfs(a, b, -1, j - 1) + 1;
+        if (j == -1)
+            // b到底了 只能删a[i]
+            return dfs(a, b, i - 1, -1) + 1;
+
+        // 如果a[i]==b[j]就不用删，否则 删a[i],不删b[j]，或者删b[j]不删a[i]
+        int cur = min(dfs(a, b, i - 1, j) + 1, dfs(a, b, i, j - 1) + 1);
+        if (a[i] == b[j])
+            cur = min(cur, dfs(a, b, i - 1, j - 1));
+        return cur;
     }
 };
