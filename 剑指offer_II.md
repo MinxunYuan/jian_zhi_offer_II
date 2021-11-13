@@ -237,3 +237,168 @@ public:
     }
 };
 ```
+
+#### [剑指 Offer II 095. 最长公共子序列（dp）](https://leetcode-cn.com/problems/qJnOS7/)
+
+给定两个字符串 text1 和 text2，返回这两个字符串的最长公共子序列largest common subsequence的长度。如果不存在公共子序列，返回 0 
+
+一个字符串的子序列是指这样一个新的字符串：它是由原字符串在不改变字符的相对顺序的情况下删除某些字符（也可以不删除任何字符）后组成的新字符串。
+
+例如，"ace" 是 "abcde" 的子序列，但 "aec" 不是 "abcde" 的子序列。
+两个字符串的公共子序列是这两个字符串所共同拥有的子序列。
+
+**举个例子：**
+
+a[i]和b[j]的LCS由**a[i]和b[j-1]**，**a[i-1]与b[j]**的LCS，因为要求最大的那个，那肯定二者选最大
+
+当然当发现**a[i]==b[j]**的时候，那a[i], b[j]的LCS直接由a[i-1]与b[i-1]的LCS+1
+
+所以可以经典dfs一下，
+
+```c
+int dfs(string a, string b, int i, int j)
+```
+
+假设现在求**a[i], b[j]**的最大LCS，之前的条件翻译成代码as follows：
+
+```c++
+// 求a[i]和b[j]得先去看看a[i]和b[j-1] a[i-1]与b[j]的LCS
+int cur = max(dfs(a, b, i, j-1), dfs(a, b, i-1, j));
+if(a[i]==b[j])
+	cur = dfs(a, b, i-1, j-1)+1;
+```
+
+**处理一下base case**：什么时候**a[i] b[j]**的最大LCS不用脑壳想就知道呢？
+
+首先，当a b都为空的时候，即i j没东西，一开始直接传
+
+```c
+int dfs(a, b, -1, -1); // 没有a[-1]与b[-1]这种东西
+```
+
+那直接返回0
+
+还有就是某个序列为空，即只有a， 没有b， or 只有b， 没有a，分别对应j==-1和i==-1
+
+完整版本dfs：求a[len-1]与b[len-1]的最大LCS
+
+```c
+    int dfs(string a, string b, int i, int j) {
+        if(i==-1 && j==-1)
+            return 0;
+        if(i==-1)
+            return dfs(a, b, -1, j-1);
+        if(j==-1)
+            return dfs(a, b, i-1, -1);
+        int cur = max(dfs(a, b, i, j-1), dfs(a, b, i-1, j));
+        if(a[i]==b[j])
+            cur = dfs(a, b, i-1, j-1)+1;
+        return cur;
+    }
+```
+
+分析一手，
+
+整个递归过程到base case，下标i j递减，蹭蹭递进得先得到dfs(a, b, -1, -1); 才能知道dfs(a, b, 0, 0); and so on
+
+所以有种下标自顶向下的感觉
+
+**但是，发现dfs有很多重复的部分**，比如说这个
+
+```
+abc
+ace
+```
+
+在dfs(a, b, 2, 2)的stack frame中，得求一下dfs(a, b, 2, 1)和dfs(a, b, 1, 2)
+
+然后在第一个dfs(a, b, 2, 1)里面，会求dfs(a, b, 1, 1);
+
+但是dfs(a, b, 2, 2)的stack frame中，如果a[i]==b[j]，还得求dfs(a, b, 1, 1)，这在前面dfs(a, b, 2, 1)这个子过程中已经求过了（毕竟dfs(a, b, 2, 1)这个递归全执行完才会回到dfs(a, b, 2, 2)这个frame）
+
+所以已经求了的东西，可以先放到内存的某块区域（随你怎么放，放数组，放vector里面都可以），以备不时之需
+
+**问题来了：如何索引我们放进去的东西？**
+
+比如说dfs(a, b, 1, 1)和dfs(a, b, 1, 0)其实可以直接用一个**k v分别是string和int的哈希表**，毕竟“dfs(a, b, 1, 1)”与“dfs(a, b, 1, 0)”这两个字符串本来就不一样。但是发现，他们不一样的只有i j这两个参数，所以把i j参数作为二维数组的两个下标，名字无所谓，叫arr好了（其实还是得转换成一个一维地址）用来索引dfs的返回值
+
+**这个arr数组的空间能开多大呢？**
+
+main里面调的第一个和base case分别是
+
+```c
+int len1 = a.size(), len2 = b.size();
+// from main
+dfs(a, b, len1-1, len2-1);
+
+// base case
+dfs(a, b, -1, -1);
+```
+
+所以分别需要len1-1-(-1)，len2-1-(-1)的空间
+
+**但是-1这个index是非法的**，所以整体往右边诺一格，即从`arr[0][0]`开始，表示dfs(a, b, -1, -1)这个base case，`arr[len1][len2]`结束即我们要的dfs(a, b, len1-1, len2-1)，相应的，开的空间变成了len1+1, len2+1
+
+所以`arr[0][0]`放的是a[-1]与b[-1]的LCS，不存在！`arr[len1][len2]`放的是a[len1-1]与b[len2-1]的LCS
+
+声明一下缓存：
+
+```c
+int arr[len1+1][len2+1];
+vector<vector<int>> arr(len1+1, vector<int>(len2+1, 0));
+```
+
+现在变成求dfs(a, b, i, j-1, arr)的时候，先去看看`arr[i][j+1]`有东西没，有的话直接用，没有的话就dfs求一遍，再cache一下
+
+```c
+        if(a[i]==b[j]){
+            // 去看a[i-1]与b[j-1]的LCS，先看缓存里面有没有放arr[i][j]
+            if(arr[i][j])
+                // retrieve from cache
+                cur = arr[i][j];
+            else {
+                // cache
+                cur = arr[i][j] = dfs(a, b, i-1, j-1, arr)+1;
+            }
+        }
+```
+
+**真正的动态规划**
+
+反正都是要自顶向下，从`arr[0][0]`，也就是dfs(a, b, -1, -1)开始求，何不直接通过`arr[0][0]`从左往右，从上到下展开到`arr[len1][len2]`？
+
+毕竟核心就是：
+
+```c
+arr[i+1][j+1] = max(arr[i][j+1], arr[i+1][j]);
+```
+
+完整版：
+
+```c
+class Solution {
+public:
+    int dp[1005][1005]; // 长度小于1000，开1005够了
+    int longestCommonSubsequence(string a, string b) {
+        int len1 = a.size(), len2 = b.size();
+        
+        // 从a[0] b[0]到a[len-1], b[len-1]
+        // dp[0][0]放base case，即a[-1]与a[-1]的最大LCS
+        // dp[len1][len2]放的是a[len1-1]与b[len2-1]的最大LCS
+        for(int i = 0; i<len1; i++) {
+            for(int j = 0; j<len2; j++) {
+				// 所以a[0][j]与a[i][0]这两排都是0,
+                // 相当于dfs(a, b, -1, 0)与dfs(a, b, 0, -1)
+                dp[i+1][j+1] = max(dp[i][j+1], dp[i+1][j]);
+                if(a[i]==b[j])
+                    dp[i+1][j+1] = dp[i][j] + 1;
+            }
+        }
+        return dp[len1][len2];
+    }
+};
+```
+
+跟LCS差不多的一个：
+
+#### [712. 两个字符串的最小ASCII删除和](https://leetcode-cn.com/problems/minimum-ascii-delete-sum-for-two-strings/)
