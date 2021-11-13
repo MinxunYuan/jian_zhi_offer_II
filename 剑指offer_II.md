@@ -249,17 +249,17 @@ public:
 
 **举个例子：**
 
-a[i]和b[j]的LCS由**a[i]和b[j-1]**，**a[i-1]与b[j]**的LCS，因为要求最大的那个，那肯定二者选最大
+a[i]和b[j]的LCS由`a[i]和b[j-1]`，`a[i-1]与b[j]`的LCS，因为要求最大的那个，那肯定二者选最大
 
-当然当发现**a[i]==b[j]**的时候，那a[i], b[j]的LCS直接由a[i-1]与b[i-1]的LCS+1
+当然当发现`a[i]==b[j]`的时候，那a[i], b[j]的最大LCS即为a[i-1]与b[i-1]的LCS+1
 
-所以可以经典dfs一下，
+可以经典dfs一下，prototype如下：
 
 ```c
-int dfs(string a, string b, int i, int j)
+int dfs(string a, string b, int i, int j);
 ```
 
-假设现在求**a[i], b[j]**的最大LCS，之前的条件翻译成代码as follows：
+假设现在求a[i], b[j]的最大LCS，之前的条件翻译成代码as follows：
 
 ```c++
 // 求a[i]和b[j]得先去看看a[i]和b[j-1] a[i-1]与b[j]的LCS
@@ -268,19 +268,24 @@ if(a[i]==b[j])
 	cur = dfs(a, b, i-1, j-1)+1;
 ```
 
-**处理一下base case**：什么时候**a[i] b[j]**的最大LCS不用脑壳想就知道呢？
+**处理一下base case**：什么时候a[i] b[j]的最大LCS不用脑壳想就知道呢？
 
-首先，当a b都为空的时候，即i j没东西，一开始直接传
+首先，当a b序列都为空的时候，main()里面传-1进去
 
 ```c
-int dfs(a, b, -1, -1); // 没有a[-1]与b[-1]这种东西
+dfs(a, b, -1, -1); // 没有a[-1]与b[-1]这种东西
 ```
 
-那直接返回0
+直接返回0
 
 还有就是某个序列为空，即只有a， 没有b， or 只有b， 没有a，分别对应j==-1和i==-1
 
-完整版本dfs：求a[len-1]与b[len-1]的最大LCS
+```c
+dfs(a, b, -1, j-1); // 序列a没东西
+dfs(a, b, i-1, -1); // 序列b没东西
+```
+
+**得到求a[len-1]与b[len-1]的最大LCS的完整版本dfs：**
 
 ```c
     int dfs(string a, string b, int i, int j) {
@@ -299,7 +304,7 @@ int dfs(a, b, -1, -1); // 没有a[-1]与b[-1]这种东西
 
 分析一手，
 
-整个递归过程到base case，下标i j递减，蹭蹭递进得先得到dfs(a, b, -1, -1); 才能知道dfs(a, b, 0, 0); and so on
+整个递归过程到base case，下标i j递减，蹭蹭递进得先得到`dfs(a, b, -1, -1)` 才能知道`dfs(a, b, 0, 0)` and so on
 
 所以有种下标自顶向下的感觉
 
@@ -310,9 +315,9 @@ abc
 ace
 ```
 
-在dfs(a, b, 2, 2)的stack frame中，得求一下dfs(a, b, 2, 1)和dfs(a, b, 1, 2)
+在`dfs(a, b, 2, 2)`的stack frame中，得求一下`dfs(a, b, 2, 1)`和`dfs(a, b, 1, 2)`
 
-然后在第一个dfs(a, b, 2, 1)里面，会求dfs(a, b, 1, 1);
+然后在第一个`dfs(a, b, 2, 1)`里面，会求`dfs(a, b, 1, 1)`
 
 但是dfs(a, b, 2, 2)的stack frame中，如果a[i]==b[j]，还得求dfs(a, b, 1, 1)，这在前面dfs(a, b, 2, 1)这个子过程中已经求过了（毕竟dfs(a, b, 2, 1)这个递归全执行完才会回到dfs(a, b, 2, 2)这个frame）
 
@@ -348,7 +353,7 @@ int arr[len1+1][len2+1];
 vector<vector<int>> arr(len1+1, vector<int>(len2+1, 0));
 ```
 
-现在变成求dfs(a, b, i, j-1, arr)的时候，先去看看`arr[i][j+1]`有东西没，有的话直接用，没有的话就dfs求一遍，再cache一下
+现在变成求`dfs(a, b, i, j-1, arr)`的时候，先去看看`arr[i][j+1]`有东西没，有的话直接用，没有的话就dfs求一遍，再cache一下
 
 ```c
         if(a[i]==b[j]){
